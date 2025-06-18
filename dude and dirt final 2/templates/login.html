@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Login - DUDE & DIRT{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div>
+            <div class="flex justify-center">
+                <div class="relative">
+                    <div class="w-16 h-16 bg-gradient-to-br from-custom-green-600 to-custom-green-700 rounded-xl flex items-center justify-center shadow-lg">
+                        <svg class="w-8 h-8 text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.83892 12.4543s1.24988-3.08822-.21626-5.29004C8.15656 4.96245 4.58671 4.10885 4.39794 4.2436c-.18877.13476-1.11807 3.32546.34803 5.52727 1.4661 2.20183 5.09295 2.68343 5.09295 2.68343Zm0 0C10.3389 13.4543 12 15 12 18v2c0-2-.4304-3.4188 2.0696-5.9188m0 0s-.4894-2.7888 1.1206-4.35788c1.6101-1.56907 4.4903-1.54682 4.6701-1.28428.1798.26254.4317 2.84376-1.0809 4.31786-1.61 1.5691-4.7098 1.3243-4.7098 1.3243Z"/>
+                        </svg>
+                    </div>
+                    <div class="absolute -top-1 -right-1 w-4 h-4 bg-custom-green-600 rounded-full animate-pulse"></div>
+                </div>
+            </div>
+            <div class="mt-6 text-center">
+                <h1 class="text-2xl font-bold text-white mb-1">DUDE & DIRT</h1>
+                <p class="text-sm text-gray-400 font-medium mb-4">Professional Lawn Care</p>
+                <h2 class="text-xl font-semibold text-white">
+                    Sign in to your account
+                </h2>
+                <p class="mt-2 text-sm text-gray-400">
+                    Or
+                    <a href="{{ url_for('register') }}" class="font-medium text-custom-green-600 hover:text-custom-green-700">
+                        create a new account
+                    </a>
+                </p>
+            </div>
+        </div>
+        
+        <form class="mt-8 space-y-6" action="{{ url_for('login') }}" method="POST">
+            <div class="rounded-md shadow-sm -space-y-px">
+                <div>
+                    <label for="email" class="sr-only">Email address</label>
+                    <input id="email" name="email" type="email" autocomplete="email" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-t-md focus:outline-none focus:ring-custom-green-600 focus:border-custom-green-600 focus:z-10 sm:text-sm" placeholder="Email address">
+                </div>
+                <div>
+                    <label for="password" class="sr-only">Password</label>
+                    <input id="password" name="password" type="password" autocomplete="current-password" required class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-400 text-white bg-gray-800 rounded-b-md focus:outline-none focus:ring-custom-green-600 focus:border-custom-green-600 focus:z-10 sm:text-sm" placeholder="Password">
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-custom-green-600 hover:bg-custom-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-custom-green-600 disabled:opacity-50">
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <svg class="h-5 w-5 text-custom-green-700 group-hover:text-custom-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                        </svg>
+                    </span>
+                    Sign in
+                </button>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-custom-green-600 focus:ring-custom-green-600 border-gray-600 rounded bg-gray-800">
+                    <label for="remember-me" class="ml-2 block text-sm text-gray-400">
+                        Remember me
+                    </label>
+                </div>
+
+                <div class="text-sm">
+                    <a href="#" class="font-medium text-custom-green-600 hover:text-custom-green-700">
+                        Forgot your password?
+                    </a>
+                </div>
+            </div>
+
+            <!-- Demo Login Button -->
+            <button type="button" id="demoLogin" class="w-full bg-gradient-to-r from-custom-blue-800 to-custom-blue-900 hover:from-custom-blue-900 hover:to-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-lg">
+                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                Quick Demo Login
+            </button>
+
+            <!-- Demo Credentials Info -->
+            <div class="bg-gray-800 border border-gray-700 rounded-lg p-4 mt-4">
+                <div class="flex items-center mb-2">
+                    <svg class="w-4 h-4 text-custom-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-sm font-medium text-white">Demo Credentials</span>
+                </div>
+                <div class="text-xs text-gray-400 space-y-1">
+                    <div><strong>Email:</strong> demo@dudeandirt.com</div>
+                    <div><strong>Password:</strong> demo123</div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const demoLoginBtn = document.getElementById('demoLogin');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    
+    if (demoLoginBtn) {
+        demoLoginBtn.addEventListener('click', function() {
+            emailInput.value = 'demo@dudeandirt.com';
+            passwordInput.value = 'demo123';
+            
+            // Optional: Auto-submit after filling
+            setTimeout(() => {
+                document.querySelector('form').submit();
+            }, 500);
+        });
+    }
+});
+</script>
+{% endblock %} 

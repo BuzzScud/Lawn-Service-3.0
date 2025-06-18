@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DUDE & DIRT - Professional Lawn Care{% endblock %}</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // Custom color palette
+                        'custom-orange': {
+                            600: '#9F580A',
+                            700: '#8E4B10',
+                            800: '#723B13',
+                            900: '#633112'
+                        },
+                        'custom-green': {
+                            600: '#057A55',
+                            700: '#046C4E',
+                            800: '#03543F',
+                            900: '#014737'
+                        },
+                        'custom-blue': {
+                            800: '#1E429F',
+                            900: '#233876'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Flatpickr CSS and JS for advanced datepicker -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    
+    <!-- Custom CSS -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Hide all scrollbars completely */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* Firefox scrollbar styling */
+        * {
+            scrollbar-width: none;
+        }
+        
+        /* Hide scrollbar but allow scrolling */
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* Apply to body and html */
+        html, body {
+            overflow-x: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        
+        html::-webkit-scrollbar, body::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .toast-container {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 50;
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: flex-end;
+            gap: 0.5rem;
+        }
+        
+        .toast {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateY(1rem);
+            transition: all 0.3s ease;
+            max-width: 20rem;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .toast.success {
+            background-color: #057A55;
+            color: white;
+        }
+        
+        .toast.error {
+            background-color: #dc2626;
+            color: white;
+        }
+        
+        .toast.info {
+            background-color: #1E429F;
+            color: white;
+        }
+        
+        .toast.warning {
+            background-color: #9F580A;
+            color: white;
+        }
+        
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            color: #6B7280;
+        }
+        
+        .step.active {
+            color: #057A55;
+        }
+        
+        .step.completed {
+            color: #057A55;
+        }
+        
+        .step-circle {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            border: 2px solid;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+        
+        .step-line {
+            width: 3rem;
+            height: 2px;
+            background-color: #E5E7EB;
+            margin: 0 1rem;
+        }
+        
+        .step-line.completed {
+            background-color: #057A55;
+        }
+        
+        /* Custom Flatpickr Dark Theme */
+        .flatpickr-calendar {
+            background: #1f2937 !important;
+            border: 1px solid #374151 !important;
+            border-radius: 0.75rem !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+        }
+        
+        .flatpickr-calendar.open {
+            z-index: 50 !important;
+        }
+        
+        .flatpickr-months {
+            background: #1f2937 !important;
+            border-bottom: 1px solid #374151 !important;
+        }
+        
+        .flatpickr-month {
+            color: #ffffff !important;
+        }
+        
+        .flatpickr-weekdays {
+            background: #1f2937 !important;
+        }
+        
+        .flatpickr-weekday {
+            color: #9ca3af !important;
+            font-weight: 600 !important;
+        }
+        
+        .flatpickr-days {
+            background: #1f2937 !important;
+        }
+        
+        .flatpickr-day {
+            color: #d1d5db !important;
+            border: none !important;
+        }
+        
+        .flatpickr-day:hover {
+            background: #374151 !important;
+            color: #ffffff !important;
+        }
+        
+        .flatpickr-day.selected {
+            background: #057A55 !important;
+            color: #ffffff !important;
+        }
+        
+        .flatpickr-day.startRange,
+        .flatpickr-day.endRange {
+            background: #057A55 !important;
+            color: #ffffff !important;
+        }
+        
+        .flatpickr-day.inRange {
+            background: rgba(5, 122, 85, 0.3) !important;
+            color: #ffffff !important;
+        }
+        
+        .flatpickr-day.today {
+            border: 2px solid #10b981 !important;
+        }
+        
+        .flatpickr-day.disabled {
+            color: #6b7280 !important;
+        }
+        
+        .flatpickr-time {
+            background: #1f2937 !important;
+            border-top: 1px solid #374151 !important;
+        }
+        
+        .flatpickr-time input {
+            background: #374151 !important;
+            color: #ffffff !important;
+            border: 1px solid #4b5563 !important;
+        }
+        
+        .flatpickr-time input:focus {
+            border-color: #057A55 !important;
+        }
+        
+        .flatpickr-prev-month,
+        .flatpickr-next-month {
+            color: #9ca3af !important;
+        }
+        
+        .flatpickr-prev-month:hover,
+        .flatpickr-next-month:hover {
+            color: #ffffff !important;
+        }
+        
+        .flatpickr-current-month .flatpickr-monthDropdown-months {
+            background: #374151 !important;
+            color: #ffffff !important;
+        }
+        
+        .flatpickr-current-month input.cur-year {
+            background: #374151 !important;
+            color: #ffffff !important;
+        }
+    </style>
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Layout Container -->
+    <div class="flex h-screen bg-gray-900">
+        <!-- Left Sidebar -->
+        <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-gray-900 to-gray-800 border-r border-gray-700 shadow-2xl transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static -translate-x-full">
+            <div class="flex flex-col h-full">
+                <!-- Brand Section -->
+                <div class="flex items-center justify-between p-6 border-b border-gray-700">
+                    <div class="flex items-center space-x-3">
+                        <div class="relative">
+                            <div class="w-10 h-10 bg-gradient-to-br from-custom-green-600 to-custom-green-700 rounded-xl flex items-center justify-center shadow-lg">
+                                <svg class="w-6 h-6 text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.83892 12.4543s1.24988-3.08822-.21626-5.29004C8.15656 4.96245 4.58671 4.10885 4.39794 4.2436c-.18877.13476-1.11807 3.32546.34803 5.52727 1.4661 2.20183 5.09295 2.68343 5.09295 2.68343Zm0 0C10.3389 13.4543 12 15 12 18v2c0-2-.4304-3.4188 2.0696-5.9188m0 0s-.4894-2.7888 1.1206-4.35788c1.6101-1.56907 4.4903-1.54682 4.6701-1.28428.1798.26254.4317 2.84376-1.0809 4.31786-1.61 1.5691-4.7098 1.3243-4.7098 1.3243Z"/>
+                                </svg>
+                            </div>
+                            <div class="absolute -top-1 -right-1 w-3 h-3 bg-custom-green-600 rounded-full animate-pulse"></div>
+                        </div>
+                        <div>
+                            <div class="text-xl font-bold text-white">DUDE & DIRT</div>
+                            <div class="text-xs text-gray-400">Professional Lawn Care</div>
+                        </div>
+                    </div>
+                    <button id="closeSidebarBtn" class="lg:hidden p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-all duration-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                {% if current_user.is_authenticated %}
+                    <!-- Authenticated User Navigation -->
+                    <nav class="flex-1 p-6 space-y-3">
+                        <a href="{{ url_for('dashboard') }}" class="group flex items-center px-5 py-4 text-xl font-semibold text-white hover:text-custom-green-600 hover:bg-gray-800 rounded-xl transition-all duration-200 border border-transparent hover:border-gray-700">
+                            <svg class="w-6 h-6 mr-4 text-gray-400 group-hover:text-custom-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"></path>
+                            </svg>
+                            Dashboard
+                        </a>
+                        
+                        <a href="{{ url_for('booking_step1') }}" class="group flex items-center px-5 py-4 text-xl font-semibold text-white hover:text-custom-green-600 hover:bg-gray-800 rounded-xl transition-all duration-200 border border-transparent hover:border-gray-700">
+                            <svg class="w-6 h-6 mr-4 text-gray-400 group-hover:text-custom-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 9l2 2 4-4"></path>
+                            </svg>
+                            Book Service
+                        </a>
+                        
+                        <a href="{{ url_for('products') }}" class="group flex items-center px-5 py-4 text-xl font-semibold text-white hover:text-custom-green-600 hover:bg-gray-800 rounded-xl transition-all duration-200 border border-transparent hover:border-gray-700">
+                            <svg class="w-6 h-6 mr-4 text-gray-400 group-hover:text-custom-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                            </svg>
+                            Products
+                        </a>
+                        
+                        <a href="{{ url_for('profile') }}" class="group flex items-center px-5 py-4 text-xl font-semibold text-white hover:text-custom-green-600 hover:bg-gray-800 rounded-xl transition-all duration-200 border border-transparent hover:border-gray-700">
+                            <svg class="w-6 h-6 mr-4 text-gray-400 group-hover:text-custom-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            Profile
+                        </a>
+                        
+                        <a href="{{ url_for('points') }}" class="group flex items-center px-5 py-4 text-xl font-semibold text-white hover:text-custom-green-600 hover:bg-gray-800 rounded-xl transition-all duration-200 border border-transparent hover:border-gray-700">
+                            <svg class="w-6 h-6 mr-4 text-gray-400 group-hover:text-custom-green-600" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.83892 12.4543s1.24988-3.08822-.21626-5.29004C8.15656 4.96245 4.58671 4.10885 4.39794 4.2436c-.18877.13476-1.11807 3.32546.34803 5.52727 1.4661 2.20183 5.09295 2.68343 5.09295 2.68343Zm0 0C10.3389 13.4543 12 15 12 18v2c0-2-.4304-3.4188 2.0696-5.9188m0 0s-.4894-2.7888 1.1206-4.35788c1.6101-1.56907 4.4903-1.54682 4.6701-1.28428.1798.26254.4317 2.84376-1.0809 4.31786-1.61 1.5691-4.7098 1.3243-4.7098 1.3243Z"/>
+                            </svg>
+                            Seeds
+                        </a>
+
+                        <a href="{{ url_for('receipts') }}" class="group flex items-center px-5 py-4 text-xl font-semibold text-white hover:text-custom-green-600 hover:bg-gray-800 rounded-xl transition-all duration-200 border border-transparent hover:border-gray-700">
+                            <svg class="w-6 h-6 mr-4 text-gray-400 group-hover:text-custom-green-600" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                                <path fill-rule="evenodd" d="M5.535 7.677c.313-.98.687-2.023.926-2.677H17.46c.253.63.646 1.64.977 2.61.166.487.312.953.416 1.347.11.42.148.675.148.779 0 .18-.032.355-.09.515-.06.161-.144.3-.243.412-.1.111-.21.192-.324.245a.809.809 0 0 1-.686 0 1.004 1.004 0 0 1-.324-.245c-.1-.112-.183-.25-.242-.412a1.473 1.473 0 0 1-.091-.515 1 1 0 1 0-2 0 1.4 1.4 0 0 1-.333.927.896.896 0 0 1-.667.323.896.896 0 0 1-.667-.323A1.401 1.401 0 0 1 13 9.736a1 1 0 1 0-2 0 1.4 1.4 0 0 1-.333.927.896.896 0 0 1-.667.323.896.896 0 0 1-.667-.323A1.4 1.4 0 0 1 9 9.74v-.008a1 1 0 0 0-2 .003v.008a1.504 1.504 0 0 1-.18.712 1.22 1.22 0 0 1-.146.209l-.007.007a1.01 1.01 0 0 1-.325.248.82.82 0 0 1-.316.08.973.973 0 0 1-.563-.256 1.224 1.224 0 0 1-.102-.103A1.518 1.518 0 0 1 5 9.724v-.006a2.543 2.543 0 0 1 .029-.207c.024-.132.06-.296.11-.49.098-.385.237-.85.395-1.344ZM4 12.112a3.521 3.521 0 0 1-1-2.376c0-.349.098-.8.202-1.208.112-.441.264-.95.428-1.46.327-1.024.715-2.104.958-2.767A1.985 1.985 0 0 1 6.456 3h11.01c.803 0 1.539.481 1.844 1.243.258.641.67 1.697 1.019 2.72a22.3 22.3 0 0 1 .457 1.487c.114.433.214.903.214 1.286 0 .412-.072.821-.214 1.207A3.288 3.288 0 0 1 20 12.16V19a2 2 0 0 1-2 2h-6a1 1 0 0 1-1-1v-4H8v4a1 1 0 0 1-1 1H6a2 2 0 0 1-2-2v-6.888ZM13 15a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-2Z" clip-rule="evenodd"/>
+                            </svg>
+                            Receipts
+                        </a>
+                    </nav>
+
+                    <!-- User Profile Section -->
+                    <div class="p-6 border-t border-gray-700">
+                        <div class="mb-4">
+                            <div class="flex items-center space-x-4 bg-gray-800 rounded-xl px-4 py-4 border border-gray-700">
+                                <div class="relative">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-custom-green-600 to-custom-green-700 rounded-xl flex items-center justify-center text-white font-bold text-base shadow-lg">
+                                        {{ current_user.full_name[0] }}
+                                    </div>
+                                    <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-custom-green-600 rounded-full border-2 border-gray-900"></div>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="text-xl font-semibold text-white truncate">{{ current_user.full_name }}</div>
+                                    <div class="text-base text-gray-400">Online</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Logout Button -->
+                        <a href="{{ url_for('logout') }}" class="w-full group flex items-center px-5 py-4 text-xl font-semibold text-red-300 hover:text-white hover:bg-red-600 hover:bg-opacity-20 border border-red-600 border-opacity-30 hover:border-red-500 rounded-xl transition-all duration-200">
+                            <svg class="w-6 h-6 mr-4 group-hover:transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
+                            Sign Out
+                        </a>
+                    </div>
+                {% else %}
+                    <!-- Guest Navigation -->
+                    <nav class="flex-1 p-6 space-y-3">
+                        <a href="{{ url_for('login') }}" class="w-full flex items-center px-5 py-4 text-xl font-semibold text-white hover:text-custom-green-600 hover:bg-gray-800 rounded-xl transition-all duration-200 border border-transparent hover:border-gray-700">
+                            <svg class="w-6 h-6 mr-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
+                            Sign In
+                        </a>
+                        <a href="{{ url_for('register') }}" class="w-full flex items-center px-5 py-4 text-xl font-semibold text-white bg-gradient-to-r from-custom-green-600 to-custom-green-700 hover:from-custom-green-700 hover:to-custom-green-800 rounded-xl transition-all duration-200 shadow-lg">
+                            <svg class="w-6 h-6 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                            </svg>
+                            Get Started
+                        </a>
+                    </nav>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col lg:ml-0">
+            <!-- Mobile Header -->
+            <header class="lg:hidden bg-gray-900 border-b border-gray-700 px-4 py-3">
+                <div class="flex items-center justify-between">
+                    <button id="openSidebarBtn" class="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-all duration-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-br from-custom-green-600 to-custom-green-700 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.83892 12.4543s1.24988-3.08822-.21626-5.29004C8.15656 4.96245 4.58671 4.10885 4.39794 4.2436c-.18877.13476-1.11807 3.32546.34803 5.52727 1.4661 2.20183 5.09295 2.68343 5.09295 2.68343Zm0 0C10.3389 13.4543 12 15 12 18v2c0-2-.4304-3.4188 2.0696-5.9188m0 0s-.4894-2.7888 1.1206-4.35788c1.6101-1.56907 4.4903-1.54682 4.6701-1.28428.1798.26254.4317 2.84376-1.0809 4.31786-1.61 1.5691-4.7098 1.3243-4.7098 1.3243Z"/>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-bold text-white">DUDE & DIRT</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 bg-gray-900 overflow-auto">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden hidden"></div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+    <!-- Base JavaScript -->
+    <script>
+        lucide.createIcons();
+
+        // Sidebar functionality
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const openSidebarBtn = document.getElementById('openSidebarBtn');
+        const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+
+        function openSidebar() {
+            sidebar.classList.remove('-translate-x-full');
+            sidebarOverlay.classList.remove('hidden');
+        }
+
+        function closeSidebar() {
+            sidebar.classList.add('-translate-x-full');
+            sidebarOverlay.classList.add('hidden');
+        }
+
+        if (openSidebarBtn) {
+            openSidebarBtn.addEventListener('click', openSidebar);
+        }
+
+        if (closeSidebarBtn) {
+            closeSidebarBtn.addEventListener('click', closeSidebar);
+        }
+
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', closeSidebar);
+        }
+
+        // Toast notification system
+        function showToast(message, type = 'success', duration = 3000) {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type} px-4 py-3 rounded-lg text-white font-medium shadow-lg`;
+            toast.textContent = message;
+            
+            toastContainer.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+            
+            // Remove toast
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, duration);
+        }
+
+        // Make showToast available globally
+        window.showToast = showToast;
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html> 

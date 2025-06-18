@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}Book Service - Step 3 - Lawn Pros{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step">
+                <div class="step-circle border-green-500 bg-green-500 text-white">1</div>
+                <span class="font-medium text-green-400">Choose Service</span>
+            </div>
+            <div class="step-line bg-green-500"></div>
+            <div class="step">
+                <div class="step-circle border-green-500 bg-green-500 text-white">2</div>
+                <span class="font-medium text-green-400">Choose Products</span>
+            </div>
+            <div class="step-line bg-green-500"></div>
+            <div class="step">
+                <div class="step-circle border-green-500 bg-green-500 text-white">3</div>
+                <span class="font-medium text-green-400">Select Date & Time</span>
+            </div>
+            <div class="step-line bg-green-500"></div>
+            <div class="step active">
+                <div class="step-circle border-green-500 bg-green-500 text-white">4</div>
+                <span class="font-medium">Confirm Booking</span>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="text-center mb-8">
+            {% if booking_data.from_products_page and booking_data.price == 0.00 %}
+            <h1 class="text-3xl font-bold text-white mb-2">Confirm Your Order</h1>
+            <p class="text-gray-400">Review your details and confirm your product order</p>
+            {% else %}
+            <h1 class="text-3xl font-bold text-white mb-2">Confirm Your Booking</h1>
+            <p class="text-gray-400">Review your details and confirm your service booking</p>
+            {% endif %}
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Booking Summary -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Service Details -->
+                <div class="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                    <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                        <i data-lucide="clipboard-list" class="mr-2"></i>
+                        {% if booking_data.from_products_page and booking_data.price == 0.00 %}
+                        Order Summary
+                        {% else %}
+                        Booking Summary
+                        {% endif %}
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-4 bg-gray-700 rounded-lg">
+                            <div class="flex items-center">
+                                <i data-lucide="wrench" class="w-6 h-6 text-green-400 mr-3"></i>
+                                <div>
+                                    <div class="text-white font-medium">{{ booking_data.service_name }}</div>
+                                    <div class="text-sm text-gray-400">Professional lawn care service</div>
+                                </div>
+                            </div>
+                            <div class="text-white font-semibold">${{ "%.2f"|format(booking_data.price) }}</div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="p-4 bg-gray-700 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i data-lucide="calendar" class="w-5 h-5 text-green-400 mr-2"></i>
+                                    <span class="text-sm text-gray-400">Scheduled Date</span>
+                                </div>
+                                <div id="scheduledDate" class="text-white font-medium">Loading...</div>
+                            </div>
+                            
+                            <div class="p-4 bg-gray-700 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <i data-lucide="clock" class="w-5 h-5 text-green-400 mr-2"></i>
+                                    <span class="text-sm text-gray-400">Scheduled Time</span>
+                                </div>
+                                <div id="scheduledTime" class="text-white font-medium">Loading...</div>
+                            </div>
+                        </div>
+                        
+                        <div id="specialInstructionsDiv" class="p-4 bg-gray-700 rounded-lg hidden">
+                            <div class="flex items-center mb-2">
+                                <i data-lucide="message-square" class="w-5 h-5 text-green-400 mr-2"></i>
+                                <span class="text-sm text-gray-400">Special Instructions</span>
+                            </div>
+                            <div id="specialInstructionsText" class="text-white"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer Information -->
+                <div class="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                    <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                        <i data-lucide="user" class="mr-2"></i>
+                        Customer Information
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Full Name</label>
+                            <div class="text-white font-medium">{{ current_user.full_name }}</div>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Email</label>
+                            <div class="text-white font-medium">{{ current_user.email }}</div>
+                        </div>
+                        {% if current_user.phone %}
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Phone</label>
+                            <div class="text-white font-medium">{{ current_user.phone }}</div>
+                        </div>
+                        {% endif %}
+                        {% if current_user.address %}
+                        <div class="md:col-span-2">
+                            <label class="block text-sm text-gray-400 mb-1">Service Address</label>
+                            <div class="text-white font-medium">{{ current_user.address }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Summary -->
+            <div class="lg:col-span-1">
+                <div class="bg-gray-800 border border-gray-700 rounded-xl p-6 sticky top-8">
+                    <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                        <i data-lucide="credit-card" class="mr-2"></i>
+                        Payment Summary
+                    </h3>
+                    
+                    <div class="space-y-3 mb-6">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Service Fee</span>
+                            <span class="text-white">${{ "%.2f"|format(booking_data.price) }}</span>
+                        </div>
+                        {% if booking_data.products %}
+                        {% for product in booking_data.products %}
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">{{ product.name }} ({{ product.quantity }}x)</span>
+                            <span class="text-white">${{ "%.2f"|format(product.total) }}</span>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Tax (8.5%)</span>
+                            <span class="text-white" id="taxAmount">${{ "%.2f"|format((booking_data.price + (booking_data.products_total or 0)) * 0.085) }}</span>
+                        </div>
+                        <hr class="border-gray-600">
+                        <div class="flex justify-between text-lg font-semibold">
+                            <span class="text-white">Total</span>
+                            <span class="text-green-400" id="totalAmount">${{ "%.2f"|format((booking_data.price + (booking_data.products_total or 0)) * 1.085) }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Method Selection -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-300 mb-3">Payment Method</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center p-3 border border-gray-600 rounded-lg cursor-pointer hover:border-green-500 transition-colors">
+                                <input type="radio" name="paymentMethod" value="card" class="text-green-500 focus:ring-green-500" checked>
+                                <i data-lucide="credit-card" class="w-5 h-5 mx-3 text-gray-400"></i>
+                                <span class="text-white">Credit/Debit Card</span>
+                            </label>
+                            <label class="flex items-center p-3 border border-gray-600 rounded-lg cursor-pointer hover:border-green-500 transition-colors">
+                                <input type="radio" name="paymentMethod" value="paypal" class="text-green-500 focus:ring-green-500">
+                                <i data-lucide="smartphone" class="w-5 h-5 mx-3 text-gray-400"></i>
+                                <span class="text-white">PayPal</span>
+                            </label>
+                            <label class="flex items-center p-3 border border-gray-600 rounded-lg cursor-pointer hover:border-green-500 transition-colors">
+                                <input type="radio" name="paymentMethod" value="cash" class="text-green-500 focus:ring-green-500">
+                                <i data-lucide="banknote" class="w-5 h-5 mx-3 text-gray-400"></i>
+                                <span class="text-white">Pay on Service</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Terms and Conditions -->
+                    <div class="mb-6">
+                        <label class="flex items-start">
+                            <input type="checkbox" id="termsCheckbox" class="mt-1 text-green-500 focus:ring-green-500 rounded">
+                            <span class="ml-2 text-sm text-gray-400">
+                                I agree to the <a href="#" class="text-green-400 hover:text-green-300">Terms of Service</a> 
+                                and <a href="#" class="text-green-400 hover:text-green-300">Privacy Policy</a>
+                            </span>
+                        </label>
+                    </div>
+                    
+                    <button id="confirmBookingBtn" disabled class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center">
+                        <i data-lucide="check-circle" class="mr-2"></i>
+                        {% if booking_data.from_products_page and booking_data.price == 0.00 %}
+                        Confirm Order
+                        {% else %}
+                        Confirm Booking
+                        {% endif %}
+                    </button>
+                    
+                    <p class="text-xs text-gray-500 mt-3 text-center">
+                        You will receive a confirmation email after booking
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="flex justify-between items-center mt-8">
+            <a href="{{ url_for('booking_step3') }}" class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center">
+                <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                {% if booking_data.from_products_page and booking_data.price == 0.00 %}
+                Back to Delivery Selection
+                {% else %}
+                Back to Date Selection
+                {% endif %}
+            </a>
+            
+            <div class="text-sm text-gray-400">
+                {% if booking_data.from_products_page and booking_data.price == 0.00 %}
+                Step 3 of 3 - Ready to confirm
+                {% else %}
+                Step 4 of 4 - Ready to confirm
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-gray-800 rounded-xl p-8 max-w-md w-full border border-gray-700">
+        <div class="text-center">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="check-circle" class="w-8 h-8 text-green-600"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-2">Booking Confirmed!</h3>
+            <p class="text-gray-400 mb-6">Your lawn service has been successfully booked. You'll receive a confirmation email shortly.</p>
+            <div class="space-y-3">
+                <a href="{{ url_for('dashboard') }}" class="block w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors">
+                    Back to Dashboard
+                </a>
+                <button onclick="closeSuccessModal()" class="block w-full bg-gray-700 hover:bg-gray-600 text-white py-3 px-4 rounded-lg font-semibold transition-colors">
+                    Book Another Service
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmBookingBtn = document.getElementById('confirmBookingBtn');
+    const termsCheckbox = document.getElementById('termsCheckbox');
+    const successModal = document.getElementById('successModal');
+    
+    // Load booking session data (this would come from the backend in a real app)
+    const bookingData = {{ booking_data | tojson }};
+    
+    // Update UI with booking data
+    if (bookingData.scheduled_date) {
+        const scheduledDate = new Date(bookingData.scheduled_date);
+        document.getElementById('scheduledDate').textContent = scheduledDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
+        document.getElementById('scheduledTime').textContent = scheduledDate.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+    }
+    
+    if (bookingData.special_instructions && bookingData.special_instructions.trim()) {
+        document.getElementById('specialInstructionsDiv').classList.remove('hidden');
+        document.getElementById('specialInstructionsText').textContent = bookingData.special_instructions;
+    }
+    
+    // Terms checkbox validation
+    termsCheckbox.addEventListener('change', function() {
+        confirmBookingBtn.disabled = !this.checked;
+    });
+    
+    // Confirm booking
+    confirmBookingBtn.addEventListener('click', async function() {
+        if (!termsCheckbox.checked) {
+            showToast('Please accept the terms and conditions', 'error');
+            return;
+        }
+        
+        const selectedPaymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+        
+        // Show loading state
+        this.disabled = true;
+        this.innerHTML = '<i data-lucide="loader-2" class="mr-2 animate-spin"></i>Processing...';
+        
+        try {
+            const response = await fetch('/booking/confirm', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    payment_method: selectedPaymentMethod
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(data.message, 'success');
+                setTimeout(() => {
+                    successModal.classList.remove('hidden');
+                }, 1000);
+            } else {
+                showToast(data.message || 'Failed to confirm booking', 'error');
+                // Reset button
+                this.disabled = false;
+                this.innerHTML = '<i data-lucide="check-circle" class="mr-2"></i>Confirm Booking';
+            }
+        } catch (error) {
+            showToast('An error occurred. Please try again.', 'error');
+            // Reset button
+            this.disabled = false;
+            this.innerHTML = '<i data-lucide="check-circle" class="mr-2"></i>Confirm Booking';
+        }
+    });
+});
+
+function closeSuccessModal() {
+    document.getElementById('successModal').classList.add('hidden');
+    window.location.href = '/booking/step1';
+}
+
+// Close modal when clicking outside
+document.getElementById('successModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeSuccessModal();
+    }
+});
+</script>
+{% endblock %} 

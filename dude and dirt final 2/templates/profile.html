@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Lawn Pros{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="w-24 h-24 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span class="text-3xl font-bold text-white">{{ user.full_name[0] if user.full_name else 'U' }}</span>
+            </div>
+            <h1 class="text-3xl font-bold text-white mb-2">My Profile</h1>
+            <p class="text-gray-400">Manage your account information and preferences</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Profile Information -->
+            <div class="lg:col-span-2">
+                <div class="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                    <h3 class="text-xl font-semibold text-white mb-6 flex items-center">
+                        <i data-lucide="user" class="mr-2"></i>
+                        Personal Information
+                    </h3>
+                    
+                    <form id="profileForm" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="full_name" class="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
+                                <input type="text" id="full_name" name="full_name" value="{{ user.full_name }}"
+                                       class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            </div>
+                            
+                            <div>
+                                <label for="username" class="block text-sm font-medium text-gray-300 mb-2">Username</label>
+                                <input type="text" id="username" name="username" value="{{ user.username }}" readonly
+                                       class="w-full px-3 py-2 bg-gray-600 border border-gray-600 rounded-md text-gray-400 cursor-not-allowed">
+                                <p class="text-xs text-gray-500 mt-1">Username cannot be changed</p>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+                            <input type="email" id="email" name="email" value="{{ user.email }}" readonly
+                                   class="w-full px-3 py-2 bg-gray-600 border border-gray-600 rounded-md text-gray-400 cursor-not-allowed">
+                            <p class="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                        </div>
+                        
+                        <div>
+                            <label for="phone" class="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
+                            <input type="tel" id="phone" name="phone" value="{{ user.phone or '' }}"
+                                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                   placeholder="Enter your phone number">
+                        </div>
+                        
+                        <div>
+                            <label for="address" class="block text-sm font-medium text-gray-300 mb-2">Service Address</label>
+                            <textarea id="address" name="address" rows="3"
+                                      class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                      placeholder="Enter your service address">{{ user.address or '' }}</textarea>
+                            <p class="text-xs text-gray-500 mt-1">This is where our team will provide services</p>
+                        </div>
+                        
+                        <div class="flex justify-end">
+                            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center">
+                                <i data-lucide="save" class="mr-2 w-4 h-4"></i>
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Account Stats & Quick Actions -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Account Stats -->
+                <div class="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                    <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                        <i data-lucide="bar-chart-3" class="mr-2"></i>
+                        Account Stats
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400">Member Since</span>
+                            <span class="text-white font-medium">{{ user.created_at.strftime('%B %Y') }}</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400">Total Bookings</span>
+                            <span class="text-green-400 font-medium" id="totalBookings">Loading...</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400">Active Bookings</span>
+                            <span class="text-blue-400 font-medium" id="activeBookings">Loading...</span>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-400">Account Status</span>
+                            <span class="text-green-400 font-medium">Active</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                    <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                        <i data-lucide="zap" class="mr-2"></i>
+                        Quick Actions
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <a href="{{ url_for('booking_step1') }}" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">
+                            <i data-lucide="plus-circle" class="mr-2 w-4 h-4"></i>
+                            Book New Service
+                        </a>
+                        
+                        <button onclick="loadBookingHistory()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">
+                            <i data-lucide="history" class="mr-2 w-4 h-4"></i>
+                            View Booking History
+                        </button>
+                        
+                        <a href="{{ url_for('dashboard') }}" class="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center">
+                            <i data-lucide="home" class="mr-2 w-4 h-4"></i>
+                            Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Account Security -->
+                <div class="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                    <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                        <i data-lucide="shield-check" class="mr-2"></i>
+                        Account Security
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center p-3 bg-gray-700 rounded-lg">
+                            <div>
+                                <div class="text-white text-sm font-medium">Password</div>
+                                <div class="text-gray-400 text-xs">Last changed: Never</div>
+                            </div>
+                            <button class="text-green-400 hover:text-green-300 text-sm font-medium">
+                                Change
+                            </button>
+                        </div>
+                        
+                        <div class="flex justify-between items-center p-3 bg-gray-700 rounded-lg">
+                            <div>
+                                <div class="text-white text-sm font-medium">Two-Factor Auth</div>
+                                <div class="text-gray-400 text-xs">Not enabled</div>
+                            </div>
+                            <button class="text-green-400 hover:text-green-300 text-sm font-medium">
+                                Enable
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Booking History Modal -->
+<div id="bookingHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-gray-800 rounded-xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto border border-gray-700">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-2xl font-bold text-white">Booking History</h3>
+            <button onclick="closeBookingHistoryModal()" class="text-gray-400 hover:text-white">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        
+        <div id="bookingHistoryContent" class="space-y-4">
+            <!-- Booking history will be loaded here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const profileForm = document.getElementById('profileForm');
+    
+    // Load account stats
+    loadAccountStats();
+    
+    // Profile form submission
+    profileForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            full_name: document.getElementById('full_name').value,
+            phone: document.getElementById('phone').value,
+            address: document.getElementById('address').value
+        };
+        
+        try {
+            const response = await fetch('/profile/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast(data.message, 'success');
+            } else {
+                showToast('Failed to update profile', 'error');
+            }
+        } catch (error) {
+            showToast('An error occurred. Please try again.', 'error');
+        }
+    });
+});
+
+async function loadAccountStats() {
+    try {
+        const response = await fetch('/api/bookings');
+        const bookings = await response.json();
+        
+        const totalBookings = bookings.length;
+        const activeBookings = bookings.filter(booking => 
+            booking.status === 'confirmed' || booking.status === 'pending'
+        ).length;
+        
+        document.getElementById('totalBookings').textContent = totalBookings;
+        document.getElementById('activeBookings').textContent = activeBookings;
+    } catch (error) {
+        document.getElementById('totalBookings').textContent = '0';
+        document.getElementById('activeBookings').textContent = '0';
+    }
+}
+
+async function loadBookingHistory() {
+    try {
+        const response = await fetch('/api/bookings');
+        const bookings = await response.json();
+        
+        const bookingHistoryContent = document.getElementById('bookingHistoryContent');
+        
+        if (bookings.length === 0) {
+            bookingHistoryContent.innerHTML = `
+                <div class="text-center py-8">
+                    <i data-lucide="calendar-x" class="w-16 h-16 mx-auto text-gray-600 mb-4"></i>
+                    <p class="text-gray-400 text-lg">No bookings found</p>
+                    <p class="text-gray-500">Book your first service to get started</p>
+                </div>
+            `;
+        } else {
+            bookingHistoryContent.innerHTML = bookings.map(booking => {
+                const statusColors = {
+                    'confirmed': 'bg-green-600 text-green-100',
+                    'pending': 'bg-yellow-600 text-yellow-100',
+                    'completed': 'bg-blue-600 text-blue-100',
+                    'cancelled': 'bg-red-600 text-red-100'
+                };
+                
+                const statusColor = statusColors[booking.status] || 'bg-gray-600 text-gray-100';
+                const bookingDate = new Date(booking.scheduled_date);
+                
+                return `
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex-1">
+                                <h4 class="text-white font-medium">${booking.service_name}</h4>
+                                <p class="text-gray-400 text-sm">${bookingDate.toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit'
+                                })}</p>
+                                ${booking.special_instructions ? `<p class="text-gray-400 text-xs mt-1">${booking.special_instructions}</p>` : ''}
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs px-2 py-1 rounded-full ${statusColor}">
+                                    ${booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                                </span>
+                                <div class="text-white font-semibold mt-1">$${booking.total_price.toFixed(2)}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        document.getElementById('bookingHistoryModal').classList.remove('hidden');
+        lucide.createIcons(); // Re-initialize icons
+    } catch (error) {
+        showToast('Failed to load booking history', 'error');
+    }
+}
+
+function closeBookingHistoryModal() {
+    document.getElementById('bookingHistoryModal').classList.add('hidden');
+}
+
+// Close modal when clicking outside
+document.getElementById('bookingHistoryModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeBookingHistoryModal();
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Book Service - Step 3 - DUDE & DIRT{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step">
+                <div class="step-circle border-green-500 bg-green-500 text-white">1</div>
+                <span class="font-medium text-green-400">Choose Service</span>
+            </div>
+            <div class="step-line bg-green-500"></div>
+            <div class="step">
+                <div class="step-circle border-green-500 bg-green-500 text-white">2</div>
+                <span class="font-medium text-green-400">Choose Products</span>
+            </div>
+            <div class="step-line bg-green-500"></div>
+            <div class="step active">
+                <div class="step-circle border-green-500 bg-green-500 text-white">3</div>
+                <span class="font-medium">Select Date & Time</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step">
+                <div class="step-circle border-gray-400">4</div>
+                <span>Confirm Booking</span>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="text-center mb-8">
+            {% if booking_data.from_products_page and booking_data.price == 0.00 %}
+            <h1 class="text-3xl font-bold text-white mb-2">Select Delivery Date & Time</h1>
+            <p class="text-gray-400">Choose when you'd like your products delivered</p>
+            {% else %}
+            <h1 class="text-3xl font-bold text-white mb-2">Select Date & Time</h1>
+            <p class="text-gray-400">Choose when you'd like your {{ booking_data.service_name }} service</p>
+            {% endif %}
+        </div>
+
+        <!-- Simple Date & Time Form -->
+        <div class="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-2xl mx-auto">
+            <div class="mb-6">
+                <label for="serviceDate" class="block text-sm font-medium text-gray-300 mb-2">
+                    Service Date
+                </label>
+                <input type="date" id="serviceDate" 
+                       class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+            </div>
+            
+            <div class="mb-6">
+                <label for="serviceTime" class="block text-sm font-medium text-gray-300 mb-2">
+                    Preferred Time
+                </label>
+                <select id="serviceTime" 
+                        class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    <option value="">Select time</option>
+                    <option value="08:00">8:00 AM</option>
+                    <option value="09:00">9:00 AM</option>
+                    <option value="10:00">10:00 AM</option>
+                    <option value="11:00">11:00 AM</option>
+                    <option value="12:00">12:00 PM</option>
+                    <option value="13:00">1:00 PM</option>
+                    <option value="14:00">2:00 PM</option>
+                    <option value="15:00">3:00 PM</option>
+                    <option value="16:00">4:00 PM</option>
+                    <option value="17:00">5:00 PM</option>
+                </select>
+            </div>
+
+            <div class="mb-6">
+                <label for="specialInstructions" class="block text-sm font-medium text-gray-300 mb-2">
+                    Special Instructions (Optional)
+                </label>
+                <textarea id="specialInstructions" rows="3"
+                          class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+                          placeholder="Any specific requirements or notes..."></textarea>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="flex justify-between items-center mt-8">
+            <a href="{{ url_for('booking_step2') }}" class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center">
+                <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                Back to Products
+            </a>
+            
+            <button id="nextStepBtn" disabled class="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center">
+                {% if booking_data.from_products_page and booking_data.price == 0.00 %}
+                Continue to Order Confirmation
+                {% else %}
+                Continue to Confirmation
+                {% endif %}
+                <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const serviceDateInput = document.getElementById('serviceDate');
+    const serviceTimeSelect = document.getElementById('serviceTime');
+    const nextStepBtn = document.getElementById('nextStepBtn');
+    
+    const today = new Date();
+    serviceDateInput.min = today.toISOString().split('T')[0];
+    
+    function updateButton() {
+        if (serviceDateInput.value && serviceTimeSelect.value) {
+            nextStepBtn.disabled = false;
+        } else {
+            nextStepBtn.disabled = true;
+        }
+    }
+    
+    serviceDateInput.addEventListener('change', updateButton);
+    serviceTimeSelect.addEventListener('change', updateButton);
+    
+    nextStepBtn.addEventListener('click', async function() {
+        const date = serviceDateInput.value;
+        const time = serviceTimeSelect.value;
+        const instructions = document.getElementById('specialInstructions').value;
+        
+        if (!date || !time) {
+            showToast('Please select a date and time', 'error');
+            return;
+        }
+        
+        const scheduledDateTime = new Date(`${date}T${time}`);
+        
+        const bookingData = {
+            scheduled_date: scheduledDateTime.toISOString(),
+            special_instructions: instructions,
+            final_price: {{ booking_data.price }} + {{ booking_data.products_total or 0 }}
+        };
+        
+        try {
+            const response = await fetch('/booking/step3', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(bookingData)
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                window.location.href = '/booking/step4';
+            } else {
+                showToast('Failed to proceed to next step', 'error');
+            }
+        } catch (error) {
+            showToast('An error occurred. Please try again.', 'error');
+        }
+    });
+});
+</script>
+{% endblock %}

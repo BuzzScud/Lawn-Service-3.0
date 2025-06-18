@@ -1,0 +1,1162 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - DUDE & DIRT{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-900 hide-scrollbar">
+    <!-- Main Content Area -->
+    <main class="flex-1 p-6 md:p-8 hide-scrollbar">
+
+        <!-- Dashboard Grid -->
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Quick Booking -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 col-span-1 lg:col-span-2">
+                <h3 class="text-xl font-semibold mb-4 flex items-center">
+                    <i data-lucide="calendar-plus" class="mr-2"></i>
+                    Quick Booking
+                </h3>
+                <p class="text-gray-300 mb-4">Book your next lawn service in 3 easy steps</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="text-2xl font-bold text-green-400 mb-1">1</div>
+                        <div class="text-sm text-gray-300">Choose Service</div>
+                    </div>
+                    <div class="bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="text-2xl font-bold text-green-400 mb-1">2</div>
+                        <div class="text-sm text-gray-300">Select Date</div>
+                    </div>
+                    <div class="bg-gray-700 p-4 rounded-lg text-center">
+                        <div class="text-2xl font-bold text-green-400 mb-1">3</div>
+                        <div class="text-sm text-gray-300">Confirm Booking</div>
+                    </div>
+                </div>
+                <a href="{{ url_for('booking_step1') }}" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center">
+                    <i data-lucide="plus-circle" class="mr-2"></i>
+                    Start Booking Process
+                </a>
+            </div>
+
+            <!-- Recent Bookings -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 col-span-1">
+                <h3 class="text-xl font-semibold mb-4 flex items-center">
+                    <i data-lucide="clock" class="mr-2"></i>
+                    Recent Bookings
+                </h3>
+                <div id="recentBookings" class="space-y-3">
+                    {% if bookings %}
+                        {% for booking in bookings[:3] %}
+                        <div class="bg-gray-700 p-3 rounded-lg">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-medium text-gray-200">{{ booking.service.name }}</p>
+                                    <p class="text-sm text-gray-400">{{ booking.scheduled_date.strftime('%B %d, %Y') }}</p>
+                                </div>
+                                <span class="text-xs px-2 py-1 rounded-full 
+                                    {% if booking.status == 'confirmed' %}bg-green-600 text-green-100
+                                    {% elif booking.status == 'pending' %}bg-yellow-600 text-yellow-100
+                                    {% else %}bg-gray-600 text-gray-100{% endif %}">
+                                    {{ booking.status.title() }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-gray-400 py-8">
+                            <i data-lucide="calendar-x" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+                            <p>No bookings yet</p>
+                            <p class="text-sm">Book your first service to get started</p>
+                        </div>
+                    {% endif %}
+                </div>
+                <button onclick="loadAllBookings()" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold transition-colors">
+                    View All Bookings
+                </button>
+            </div>
+
+            <!-- Weather & Seasonal Info -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 col-span-1">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold flex items-center">
+                        <i data-lucide="cloud-sun" class="mr-2"></i>
+                        Weather & Season
+                        <span id="weatherCacheIndicator" class="hidden ml-2 px-2 py-1 text-xs bg-blue-600 text-blue-100 rounded-full">
+                            Cached
+                        </span>
+                    </h3>
+                    <button id="refreshWeatherBtn" class="p-1 text-gray-400 hover:text-white transition-colors" title="Load fresh weather data">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                
+                <!-- Location Search -->
+                <div class="mb-4">
+                    <div class="flex space-x-2">
+                        <input type="text" id="locationInput" placeholder="Enter city name..." 
+                               class="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm">
+                        <button id="searchLocationBtn" class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                            <i data-lucide="search" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="weatherContainer" class="space-y-4">
+                    <!-- Initial State -->
+                    <div id="weatherInitial" class="text-center py-8">
+                        <i data-lucide="cloud-sun" class="w-12 h-12 mx-auto mb-2 text-gray-400"></i>
+                        <p class="text-gray-400 mb-2">Weather data not loaded</p>
+                        <p class="text-sm text-gray-500">Click refresh to load weather information</p>
+                    </div>
+                    
+                    <!-- Loading State -->
+                    <div id="weatherLoading" class="hidden text-center py-8">
+                        <div class="animate-spin w-8 h-8 border-2 border-green-400 border-t-transparent rounded-full mx-auto mb-2"></div>
+                        <p class="text-gray-400">Loading weather data...</p>
+                    </div>
+                    
+                    <!-- Weather Content -->
+                    <div id="weatherContent" class="hidden space-y-4">
+                        <!-- Current Weather -->
+                        <div class="bg-gray-700 p-4 rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-400">Current Weather</span>
+                                <div id="currentWeatherIcon" class="w-8 h-8">
+                                    <i data-lucide="sun" class="w-5 h-5 text-yellow-400"></i>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div id="currentTemp" class="text-2xl font-bold text-white">--°F</div>
+                                    <div id="currentCondition" class="text-sm text-gray-300">Loading...</div>
+                                </div>
+                                <div class="text-right text-xs text-gray-400">
+                                    <div>Feels like <span id="feelsLike">--°F</span></div>
+                                    <div>Humidity <span id="humidity">--%</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Location Info -->
+                        <div class="bg-gray-700 p-4 rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-400">Location</span>
+                                <i data-lucide="map-pin" class="w-4 h-4 text-green-400"></i>
+                            </div>
+                            <div id="locationName" class="text-lg font-semibold text-white">--</div>
+                            <div id="locationDetails" class="text-sm text-gray-300">--</div>
+                        </div>
+                        
+                        <!-- Current Season -->
+                        <div class="bg-gray-700 p-4 rounded-lg">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-400">Current Season</span>
+                                <i data-lucide="leaf" class="w-5 h-5 text-green-400"></i>
+                            </div>
+                            <div id="currentSeason" class="text-lg font-semibold text-white">--</div>
+                            <div id="seasonAdvice" class="text-sm text-gray-300">--</div>
+                        </div>
+                        
+                        <!-- 3-Day Forecast -->
+                        <div id="forecastContainer" class="bg-gray-700 p-4 rounded-lg hidden">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-sm text-gray-400">3-Day Forecast</span>
+                                <i data-lucide="calendar" class="w-4 h-4 text-blue-400"></i>
+                            </div>
+                            <div id="forecastDays" class="space-y-2">
+                                <!-- Forecast days will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Error State -->
+                    <div id="weatherError" class="hidden text-center py-8">
+                        <i data-lucide="cloud-off" class="w-12 h-12 mx-auto mb-2 text-red-400"></i>
+                        <p class="text-red-400 mb-2">Weather data unavailable</p>
+                        <p id="weatherErrorMessage" class="text-sm text-gray-400 mb-4">Please try again later</p>
+                        <button id="retryWeatherBtn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors">
+                            <i data-lucide="refresh-cw" class="w-4 h-4 inline mr-1"></i>
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Lawn Care Advice -->
+                <div id="lawnAdviceContainer" class="mt-4 p-3 bg-blue-900 bg-opacity-50 rounded-lg border border-blue-700 hidden">
+                    <p class="text-sm text-blue-200">
+                        <i data-lucide="info" class="w-4 h-4 inline mr-1"></i>
+                        <span id="lawnAdvice">Loading lawn care advice...</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 col-span-1">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold flex items-center">
+                        <i data-lucide="bar-chart-3" class="mr-2"></i>
+                        Quick Stats
+                    </h3>
+                    <button id="refreshStatsBtn" class="p-1 text-gray-400 hover:text-white transition-colors">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div id="statsContainer" class="space-y-4">
+                    <!-- Stats will be loaded dynamically -->
+                    <div class="animate-pulse">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-700 p-4 rounded-lg text-center">
+                                <div class="h-6 bg-gray-600 rounded mb-2"></div>
+                                <div class="h-3 bg-gray-600 rounded"></div>
+                            </div>
+                            <div class="bg-gray-700 p-4 rounded-lg text-center">
+                                <div class="h-6 bg-gray-600 rounded mb-2"></div>
+                                <div class="h-3 bg-gray-600 rounded"></div>
+                            </div>
+                            <div class="bg-gray-700 p-4 rounded-lg text-center">
+                                <div class="h-6 bg-gray-600 rounded mb-2"></div>
+                                <div class="h-3 bg-gray-600 rounded"></div>
+                            </div>
+                            <div class="bg-gray-700 p-4 rounded-lg text-center">
+                                <div class="h-6 bg-gray-600 rounded mb-2"></div>
+                                <div class="h-3 bg-gray-600 rounded"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="lawnHealthContainer" class="mt-4 hidden">
+                    <div class="flex justify-between text-sm text-gray-400 mb-2">
+                        <span>Lawn Health Score</span>
+                        <span id="lawnHealthText">Loading...</span>
+                    </div>
+                    <div class="w-full bg-gray-700 rounded-full h-2">
+                        <div id="lawnHealthBar" class="bg-green-400 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <!-- Additional Stats Info -->
+                <div id="extraStatsContainer" class="mt-4 space-y-2 text-sm text-gray-300 hidden">
+                    <div class="flex justify-between">
+                        <span>Member since:</span>
+                        <span id="memberSince">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Popular service:</span>
+                        <span id="popularService" class="text-green-400">-</span>
+                    </div>
+                    <div id="nextBookingInfo" class="flex justify-between hidden">
+                        <span>Next booking:</span>
+                        <span id="nextBookingText" class="text-blue-400">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Featured Products -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 col-span-1">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-semibold flex items-center">
+                        <i data-lucide="package" class="mr-2"></i>
+                        Featured Products
+                    </h3>
+                    <button id="refreshProductsBtn" class="p-1 text-gray-400 hover:text-white transition-colors">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                
+                <div id="featuredProductsContainer" class="space-y-3">
+                    <!-- Product 1 -->
+                    <div class="bg-gray-700 p-4 rounded-lg border border-gray-600 hover:border-green-500 transition-all duration-200 cursor-pointer product-card" data-product-id="1">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-600 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-white">Organic Fertilizer</h4>
+                                    <p class="text-xs text-gray-400">Premium lawn nutrients</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-green-400 font-semibold">$29.99</div>
+                                <div class="text-xs text-gray-400">50lb bag</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product 2 -->
+                    <div class="bg-gray-700 p-4 rounded-lg border border-gray-600 hover:border-green-500 transition-all duration-200 cursor-pointer product-card" data-product-id="2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16l2.879-2.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242zM21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-white">Weed Control Plus</h4>
+                                    <p class="text-xs text-gray-400">Advanced weed prevention</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-green-400 font-semibold">$45.99</div>
+                                <div class="text-xs text-gray-400">1 gallon</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product 3 -->
+                    <div class="bg-gray-700 p-4 rounded-lg border border-gray-600 hover:border-green-500 transition-all duration-200 cursor-pointer product-card" data-product-id="3">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-white">Grass Seed Mix</h4>
+                                    <p class="text-xs text-gray-400">Hardy sun & shade blend</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-green-400 font-semibold">$19.99</div>
+                                <div class="text-xs text-gray-400">10lb bag</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- View All Products Button -->
+                <div class="mt-4">
+                    <a href="{{ url_for('products') }}" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                        View All Products
+                    </a>
+                </div>
+
+                <!-- Product Features -->
+                <div class="mt-4 p-3 bg-green-900 bg-opacity-30 rounded-lg border border-green-700">
+                    <div class="flex items-center mb-2">
+                        <svg class="w-4 h-4 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="text-sm font-medium text-green-300">Professional Grade Products</span>
+                    </div>
+                    <p class="text-xs text-green-200">
+                        High-quality lawn care products trusted by professionals. Free shipping on orders over $50.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Services -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 col-span-1 md:col-span-2">
+                <h3 class="text-xl font-semibold mb-4 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    Our Services
+                </h3>
+                <div id="servicesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Services will be loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- Service Popover Template (Hidden) -->
+            <div id="servicePopover" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center">
+                            <div id="popoverIcon" class="mr-3 text-green-400 w-8 h-8"></div>
+                            <h3 id="popoverTitle" class="text-xl font-semibold text-white"></h3>
+                        </div>
+                        <button id="closePopover" class="text-gray-400 hover:text-white transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <p id="popoverDescription" class="text-gray-300"></p>
+                        
+                        <div class="bg-gray-700 p-4 rounded-lg">
+                            <h4 class="font-medium text-white mb-2">Service Details</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Duration:</span>
+                                    <span id="popoverDuration" class="text-white"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Starting Price:</span>
+                                    <span id="popoverPrice" class="text-green-400 font-semibold"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="popoverFeatures" class="bg-gray-700 p-4 rounded-lg">
+                            <h4 class="font-medium text-white mb-2">What's Included</h4>
+                            <ul id="popoverFeatureList" class="space-y-1 text-sm text-gray-300">
+                                <!-- Features will be added dynamically -->
+                            </ul>
+                        </div>
+                        
+                        <div class="flex space-x-3 pt-4">
+                            <button id="bookServiceBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors flex items-center justify-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                Book This Service
+                            </button>
+                            <button id="getQuoteBtn" class="bg-gray-600 hover:bg-gray-500 text-white py-3 px-4 rounded-lg font-semibold transition-colors">
+                                Get Quote
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-700 col-span-1">
+                <h3 class="text-xl font-semibold mb-4 flex items-center">
+                    <i data-lucide="lightbulb" class="mr-2"></i>
+                    Lawn Care Tips
+                </h3>
+                <ul class="space-y-3 text-gray-300">
+                    <li class="flex items-start">
+                        <i data-lucide="check-circle" class="w-4 h-4 mt-1 mr-2 text-green-400 flex-shrink-0"></i>
+                        <span class="text-sm">Water deeply and infrequently for stronger roots</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i data-lucide="check-circle" class="w-4 h-4 mt-1 mr-2 text-green-400 flex-shrink-0"></i>
+                        <span class="text-sm">Mow regularly, but don't cut more than a third</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i data-lucide="check-circle" class="w-4 h-4 mt-1 mr-2 text-green-400 flex-shrink-0"></i>
+                        <span class="text-sm">Fertilize in spring and fall for optimal growth</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i data-lucide="check-circle" class="w-4 h-4 mt-1 mr-2 text-green-400 flex-shrink-0"></i>
+                        <span class="text-sm">Aerate your lawn annually for better soil health</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadAllBookings() {
+    try {
+        const response = await fetch('/api/bookings');
+        const bookings = await response.json();
+        
+        if (bookings.length === 0) {
+            showToast('No bookings found', 'info');
+            return;
+        }
+        
+        // Display bookings in a modal or redirect to a bookings page
+        let bookingsList = 'Your Bookings:\n\n';
+        bookings.forEach(booking => {
+            bookingsList += `${booking.service_name} - ${new Date(booking.scheduled_date).toLocaleDateString()} (${booking.status})\n`;
+        });
+        
+        alert(bookingsList);
+    } catch (error) {
+        showToast('Failed to load bookings', 'error');
+    }
+}
+
+// Services data
+const services = [
+    {
+        id: 1,
+        name: "Grass Cutting & Mowing",
+        price: 45.00,
+        description: "Professional lawn mowing and maintenance services to keep your grass healthy and perfectly trimmed. We use commercial-grade equipment for superior results.",
+        duration: "1-2 hours",
+        icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>`,
+        features: [
+            "Professional mowing with commercial equipment",
+            "Edge trimming around walkways and flower beds",
+            "Grass clipping cleanup and disposal",
+            "Basic lawn inspection and health assessment"
+        ]
+    },
+    {
+        id: 2,
+        name: "Landscaping Design",
+        price: 150.00,
+        description: "Custom landscape design and installation services to transform your outdoor space into a beautiful, functional environment that reflects your style.",
+        duration: "3-5 hours",
+        icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>`,
+        features: [
+            "Custom design consultation and planning",
+            "Plant selection based on local climate",
+            "Hardscape elements (paths, borders, features)",
+            "Irrigation system planning and installation",
+            "Seasonal maintenance recommendations"
+        ]
+    },
+    {
+        id: 3,
+        name: "Exotic Plant Care",
+        price: 80.00,
+        description: "Specialized care for exotic and rare plants requiring unique attention, proper nutrients, and specific environmental conditions.",
+        duration: "2-3 hours",
+        icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>`,
+        features: [
+            "Specialized nutrient and pH management",
+            "Climate-controlled environment setup",
+            "Pest and disease prevention specific to exotic species",
+            "Pruning and propagation techniques",
+            "Growth monitoring and health assessments"
+        ]
+    },
+    {
+        id: 4,
+        name: "Seasonal Maintenance",
+        price: 120.00,
+        description: "Comprehensive seasonal lawn and garden care including preparation for changing weather conditions and year-round landscape health.",
+        duration: "2-4 hours",
+        icon: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>`,
+        features: [
+            "Spring cleanup and preparation",
+            "Summer watering and heat protection",
+            "Fall leaf removal and winterization",
+            "Winter protection and dormancy care",
+            "Seasonal fertilization and soil treatment"
+        ]
+    }
+];
+
+// Load services into grid
+function loadServices() {
+    const servicesGrid = document.getElementById('servicesGrid');
+    servicesGrid.innerHTML = '';
+
+    services.forEach(service => {
+        const serviceCard = document.createElement('div');
+        serviceCard.className = 'bg-gray-700 p-4 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors service-card';
+        serviceCard.dataset.serviceId = service.id;
+        
+        serviceCard.innerHTML = `
+            <div class="flex items-center mb-2">
+                <div class="mr-3 text-green-400 w-6 h-6">${service.icon}</div>
+                <span class="font-medium">${service.name}</span>
+            </div>
+            <p class="text-sm text-gray-400 mb-2">${service.description.substring(0, 60)}...</p>
+            <div class="flex justify-between items-center">
+                <div class="text-green-400 font-semibold">$${service.price.toFixed(2)}</div>
+                <div class="text-xs text-gray-500">${service.duration}</div>
+            </div>
+        `;
+        
+        servicesGrid.appendChild(serviceCard);
+    });
+}
+
+// Show service popover
+function showServicePopover(serviceId) {
+    const service = services.find(s => s.id === parseInt(serviceId));
+    if (!service) return;
+
+    const popover = document.getElementById('servicePopover');
+    const popoverIcon = document.getElementById('popoverIcon');
+    const popoverTitle = document.getElementById('popoverTitle');
+    const popoverDescription = document.getElementById('popoverDescription');
+    const popoverDuration = document.getElementById('popoverDuration');
+    const popoverPrice = document.getElementById('popoverPrice');
+    const popoverFeatureList = document.getElementById('popoverFeatureList');
+    const bookServiceBtn = document.getElementById('bookServiceBtn');
+
+    // Populate popover content
+    popoverIcon.innerHTML = service.icon;
+    popoverTitle.textContent = service.name;
+    popoverDescription.textContent = service.description;
+    popoverDuration.textContent = service.duration;
+    popoverPrice.textContent = `$${service.price.toFixed(2)}`;
+
+    // Clear and populate features list
+    popoverFeatureList.innerHTML = '';
+    service.features.forEach(feature => {
+        const li = document.createElement('li');
+        li.className = 'flex items-start';
+        li.innerHTML = `
+            <svg class="w-4 h-4 text-green-400 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>${feature}</span>
+        `;
+        popoverFeatureList.appendChild(li);
+    });
+
+    // Set up book service button
+    bookServiceBtn.onclick = () => {
+        // Store service info in session storage for booking
+        sessionStorage.setItem('selectedService', JSON.stringify({
+            id: service.id,
+            name: service.name,
+            price: service.price
+        }));
+        // Redirect to booking
+        window.location.href = '/booking/step1';
+    };
+
+    // Show popover
+    popover.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+// Hide service popover
+function hideServicePopover() {
+    const popover = document.getElementById('servicePopover');
+    popover.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+// Quick Stats functionality
+async function loadQuickStats() {
+    try {
+        const response = await fetch('/api/stats');
+        const stats = await response.json();
+        
+        displayStats(stats);
+    } catch (error) {
+        console.error('Failed to load stats:', error);
+        showToast('Failed to load statistics', 'error');
+        displayStatsError();
+    }
+}
+
+function displayStats(stats) {
+    const statsContainer = document.getElementById('statsContainer');
+    const lawnHealthContainer = document.getElementById('lawnHealthContainer');
+    const extraStatsContainer = document.getElementById('extraStatsContainer');
+    
+    // Main stats grid
+    statsContainer.innerHTML = `
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-gray-700 p-4 rounded-lg text-center transform hover:scale-105 transition-transform">
+                <div class="text-2xl font-bold text-green-400 mb-1">${stats.total_services}</div>
+                <div class="text-xs text-gray-300">Total Services</div>
+            </div>
+            <div class="bg-gray-700 p-4 rounded-lg text-center transform hover:scale-105 transition-transform">
+                <div class="text-2xl font-bold text-blue-400 mb-1">${stats.this_month}</div>
+                <div class="text-xs text-gray-300">This Month</div>
+            </div>
+            <div class="bg-gray-700 p-4 rounded-lg text-center transform hover:scale-105 transition-transform">
+                <div class="text-2xl font-bold text-yellow-400 mb-1">$${stats.total_spent}</div>
+                <div class="text-xs text-gray-300">Total Spent</div>
+            </div>
+            <div class="bg-gray-700 p-4 rounded-lg text-center transform hover:scale-105 transition-transform">
+                <div class="text-2xl font-bold text-purple-400 mb-1">${stats.satisfaction_rate}%</div>
+                <div class="text-xs text-gray-300">Satisfaction</div>
+            </div>
+        </div>
+    `;
+    
+    // Lawn health score
+    const lawnHealthText = document.getElementById('lawnHealthText');
+    const lawnHealthBar = document.getElementById('lawnHealthBar');
+    
+    let healthStatus = 'Excellent';
+    let healthColor = 'bg-green-400';
+    
+    if (stats.lawn_health_score < 60) {
+        healthStatus = 'Needs Attention';
+        healthColor = 'bg-red-400';
+    } else if (stats.lawn_health_score < 75) {
+        healthStatus = 'Good';
+        healthColor = 'bg-yellow-400';
+    } else if (stats.lawn_health_score < 85) {
+        healthStatus = 'Very Good';
+        healthColor = 'bg-green-400';
+    }
+    
+    lawnHealthText.textContent = healthStatus;
+    lawnHealthBar.className = `h-2 rounded-full transition-all duration-500 ${healthColor}`;
+    
+    // Animate the progress bar
+    setTimeout(() => {
+        lawnHealthBar.style.width = `${stats.lawn_health_score}%`;
+    }, 100);
+    
+    // Extra stats
+    document.getElementById('memberSince').textContent = stats.member_since;
+    document.getElementById('popularService').textContent = stats.popular_service;
+    
+    // Next booking info
+    const nextBookingInfo =  document.getElementById('nextBookingInfo');
+    const nextBookingText = document.getElementById('nextBookingText');
+    
+    if (stats.next_booking) {
+        nextBookingText.textContent = `${stats.next_booking.service_name} (${stats.next_booking.days_until} days)`;
+        nextBookingInfo.classList.remove('hidden');
+    } else {
+        nextBookingInfo.classList.add('hidden');
+    }
+    
+    // Show all containers
+    lawnHealthContainer.classList.remove('hidden');
+    extraStatsContainer.classList.remove('hidden');
+    
+    // Add some interactive tooltips
+    addStatsTooltips(stats);
+}
+
+function displayStatsError() {
+    const statsContainer = document.getElementById('statsContainer');
+    statsContainer.innerHTML = `
+        <div class="text-center text-gray-400 py-8">
+            <i data-lucide="alert-circle" class="w-12 h-12 mx-auto mb-2 opacity-50"></i>
+            <p>Unable to load statistics</p>
+            <button onclick="loadQuickStats()" class="mt-2 text-blue-400 hover:text-blue-300 text-sm">
+                Try Again
+            </button>
+        </div>
+    `;
+    lucide.createIcons();
+}
+
+function addStatsTooltips(stats) {
+    // Add tooltips for better user experience
+    const tooltips = [
+        { element: statsContainer.children[0].children[0].children[0], text: `You've booked ${stats.total_services} services total` },
+        { element: statsContainer.children[0].children[0].children[1], text: `${stats.this_month} services this month` },
+        { element: statsContainer.children[0].children[0].children[2], text: `Total investment in lawn care` },
+        { element: statsContainer.children[0].children[0].children[3], text: `Based on completed services` }
+    ];
+    
+    tooltips.forEach(tooltip => {
+        if (tooltip.element) {
+            tooltip.element.title = tooltip.text;
+        }
+    });
+}
+
+// Event listeners
+document.addEventListener('click', (e) => {
+    // Service card click
+    if (e.target.closest('.service-card')) {
+        const serviceId = e.target.closest('.service-card').dataset.serviceId;
+        showServicePopover(serviceId);
+    }
+
+    // Close popover
+    if (e.target.id === 'closePopover' || e.target.closest('#closePopover')) {
+        hideServicePopover();
+    }
+
+    // Click outside popover to close
+    if (e.target.id === 'servicePopover') {
+        hideServicePopover();
+    }
+
+    // Get quote button
+    if (e.target.id === 'getQuoteBtn') {
+        alert('Quote request feature coming soon! Please contact us directly for custom quotes.');
+    }
+    
+    // Refresh stats button
+    if (e.target.id === 'refreshStatsBtn' || e.target.closest('#refreshStatsBtn')) {
+        loadQuickStats();
+        showToast('Statistics refreshed', 'success');
+    }
+    
+    // Product card interactions
+    if (e.target.closest('.product-card')) {
+        const productId = e.target.closest('.product-card').dataset.productId;
+        showProductDetails(productId);
+    }
+    
+
+    
+    // Refresh products button
+    if (e.target.id === 'refreshProductsBtn' || e.target.closest('#refreshProductsBtn')) {
+        refreshFeaturedProducts();
+        showToast('Products refreshed', 'success');
+    }
+});
+
+// Escape key to close popover
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        hideServicePopover();
+    }
+});
+
+// Product functionality
+function showProductDetails(productId) {
+    const products = {
+        '1': {
+            name: 'Organic Fertilizer',
+            description: 'Premium organic lawn fertilizer with slow-release nutrients for healthy, green grass all season long.',
+            price: 29.99,
+            size: '50lb bag',
+            features: [
+                'Slow-release nitrogen for extended feeding',
+                'Organic ingredients safe for pets and children',
+                'Improves soil health and root development',
+                'Covers up to 15,000 sq ft',
+                'Made from natural, sustainable sources'
+            ]
+        },
+        '2': {
+            name: 'Weed Control Plus',
+            description: 'Advanced selective herbicide that eliminates weeds while keeping your grass healthy and strong.',
+            price: 45.99,
+            size: '1 gallon',
+            features: [
+                'Kills over 200 types of weeds',
+                'Safe for established grass',
+                'Visible results in 24-48 hours',
+                'Rainproof in 1 hour',
+                'Covers up to 16,000 sq ft'
+            ]
+        },
+        '3': {
+            name: 'Grass Seed Mix',
+            description: 'Premium grass seed blend designed for both sun and shade areas, creating a thick, durable lawn.',
+            price: 19.99,
+            size: '10lb bag',
+            features: [
+                'Sun and shade tolerant varieties',
+                'Quick germination in 7-14 days',
+                'Disease and drought resistant',
+                'Covers up to 4,000 sq ft',
+                'Professional grade seed quality'
+            ]
+        }
+    };
+    
+    const product = products[productId];
+    if (!product) return;
+    
+    // Create and show product modal
+    let modal = document.getElementById('productModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'productModal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden';
+        document.body.appendChild(modal);
+    }
+    
+    modal.innerHTML = `
+        <div class="bg-gray-800 border border-gray-700 rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-xl font-semibold text-white">${product.name}</h3>
+                <button id="closeProductModal" class="text-gray-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <p class="text-gray-300">${product.description}</p>
+                
+                <div class="bg-gray-700 p-4 rounded-lg">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-2xl font-bold text-green-400">$${product.price}</span>
+                        <span class="text-gray-400">${product.size}</span>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-700 p-4 rounded-lg">
+                    <h4 class="font-medium text-white mb-2">Key Features</h4>
+                    <ul class="space-y-2">
+                        ${product.features.map(feature => `
+                            <li class="flex items-start text-sm">
+                                <svg class="w-4 h-4 text-green-400 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <span class="text-gray-300">${feature}</span>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+                
+                <div class="flex space-x-3 pt-2">
+                    <button class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors">
+                        Add to Cart
+                    </button>
+                    <button class="bg-gray-600 hover:bg-gray-500 text-white py-3 px-4 rounded-lg font-semibold transition-colors">
+                        Learn More
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    // Add close functionality
+    document.getElementById('closeProductModal').onclick = () => hideProductModal();
+    modal.onclick = (e) => {
+        if (e.target === modal) hideProductModal();
+    };
+}
+
+function hideProductModal() {
+    const modal = document.getElementById('productModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+    }
+}
+
+function refreshFeaturedProducts() {
+    // Add a subtle animation to show refresh
+    const container = document.getElementById('featuredProductsContainer');
+    container.style.opacity = '0.5';
+    
+    setTimeout(() => {
+        container.style.opacity = '1';
+        // In a real app, this would reload products from the server
+    }, 500);
+}
+
+// Weather functionality
+let currentLocation = 'New York'; // Default location
+let weatherRetryCount = 0;
+const MAX_RETRIES = 2;
+
+function loadWeatherData(location = currentLocation, retryCount = 0, forceRefresh = false) {
+    const weatherInitial = document.getElementById('weatherInitial');
+    const weatherLoading = document.getElementById('weatherLoading');
+    const weatherContent = document.getElementById('weatherContent');
+    const weatherError = document.getElementById('weatherError');
+    const lawnAdviceContainer = document.getElementById('lawnAdviceContainer');
+    
+    // Show loading state
+    weatherInitial.classList.add('hidden');
+    weatherLoading.classList.remove('hidden');
+    weatherContent.classList.add('hidden');
+    weatherError.classList.add('hidden');
+    lawnAdviceContainer.classList.add('hidden');
+    
+    // Add timeout to the fetch request
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+    
+    // Build URL with refresh parameter if needed
+    let url = `/api/weather?location=${encodeURIComponent(location)}`;
+    if (forceRefresh) {
+        url += '&refresh=true';
+    }
+    
+    fetch(url, {
+        signal: controller.signal,
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(response => {
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            weatherLoading.classList.add('hidden');
+            
+            if (data.success) {
+                updateWeatherUI(data);
+                weatherContent.classList.remove('hidden');
+                lawnAdviceContainer.classList.remove('hidden');
+                currentLocation = location;
+                
+                // Show cache indicator if data was not force refreshed
+                const cacheIndicator = document.getElementById('weatherCacheIndicator');
+                if (!forceRefresh) {
+                    cacheIndicator.classList.remove('hidden');
+                    showToast('Weather data loaded from cache', 'success');
+                } else {
+                    cacheIndicator.classList.add('hidden');
+                    showToast('Fresh weather data loaded', 'success');
+                }
+                
+                console.log('Weather data loaded successfully for:', location);
+            } else {
+                console.error('Weather API returned error:', data.error);
+                showWeatherError(data.error || 'Failed to load weather data');
+            }
+        })
+        .catch(error => {
+            clearTimeout(timeoutId);
+            console.error('Weather API error:', error);
+            weatherLoading.classList.add('hidden');
+            
+            // Retry logic
+            if (retryCount < MAX_RETRIES) {
+                console.log(`Retrying weather request (${retryCount + 1}/${MAX_RETRIES})...`);
+                setTimeout(() => {
+                    loadWeatherData(location, retryCount + 1, forceRefresh);
+                }, 2000); // Wait 2 seconds before retry
+                return;
+            }
+            
+            if (error.name === 'AbortError') {
+                showWeatherError('Request timeout. Weather service is taking too long to respond.');
+            } else if (error.message.includes('Failed to fetch')) {
+                showWeatherError('Unable to connect to weather service. Please check your internet connection.');
+            } else {
+                showWeatherError(`Network error: ${error.message}`);
+            }
+        });
+}
+
+function updateWeatherUI(data) {
+    // Current weather
+    document.getElementById('currentTemp').textContent = `${Math.round(data.current.temperature)}°F`;
+    document.getElementById('currentCondition').textContent = data.current.condition;
+    document.getElementById('feelsLike').textContent = `${Math.round(data.current.feels_like)}°F`;
+    document.getElementById('humidity').textContent = `${data.current.humidity}%`;
+    
+    // Update weather icon based on condition
+    const iconElement = document.getElementById('currentWeatherIcon');
+    const condition = data.current.condition.toLowerCase();
+    let iconName = 'sun';
+    
+    if (condition.includes('rain') || condition.includes('shower')) {
+        iconName = 'cloud-rain';
+    } else if (condition.includes('snow')) {
+        iconName = 'cloud-snow';
+    } else if (condition.includes('cloud')) {
+        iconName = 'cloud';
+    } else if (condition.includes('storm') || condition.includes('thunder')) {
+        iconName = 'cloud-lightning';
+    } else if (condition.includes('fog') || condition.includes('mist')) {
+        iconName = 'cloud-fog';
+    } else if (condition.includes('clear') || condition.includes('sunny')) {
+        iconName = 'sun';
+    }
+    
+    iconElement.innerHTML = `<i data-lucide="${iconName}" class="w-6 h-6 text-yellow-400"></i>`;
+    
+    // Location info
+    document.getElementById('locationName').textContent = data.location.name;
+    document.getElementById('locationDetails').textContent = 
+        `${data.location.region}${data.location.region ? ', ' : ''}${data.location.country}`;
+    
+    // Season info
+    document.getElementById('currentSeason').textContent = data.season.name;
+    document.getElementById('seasonAdvice').textContent = data.season.advice;
+    
+    // Lawn advice
+    document.getElementById('lawnAdvice').textContent = data.lawn_advice;
+    
+    // Forecast (if available)
+    if (data.forecast && data.forecast.length > 0) {
+        updateForecastUI(data.forecast);
+        document.getElementById('forecastContainer').classList.remove('hidden');
+    } else {
+        document.getElementById('forecastContainer').classList.add('hidden');
+    }
+    
+    // Re-initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+}
+
+function updateForecastUI(forecast) {
+    const forecastDays = document.getElementById('forecastDays');
+    forecastDays.innerHTML = '';
+    
+    forecast.slice(0, 3).forEach((day, index) => {
+        const date = new Date(day.date);
+        const dayName = index === 0 ? 'Today' : 
+                       index === 1 ? 'Tomorrow' : 
+                       date.toLocaleDateString('en-US', { weekday: 'short' });
+        
+        const dayElement = document.createElement('div');
+        dayElement.className = 'flex items-center justify-between py-2 border-b border-gray-600 last:border-b-0';
+        dayElement.innerHTML = `
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 text-center">
+                    <i data-lucide="sun" class="w-4 h-4 text-yellow-400"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium text-white">${dayName}</div>
+                    <div class="text-xs text-gray-400">${day.condition}</div>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-sm font-medium text-white">${Math.round(day.high)}°</div>
+                <div class="text-xs text-gray-400">${Math.round(day.low)}°</div>
+            </div>
+        `;
+        forecastDays.appendChild(dayElement);
+    });
+}
+
+function showWeatherError(message) {
+    document.getElementById('weatherError').classList.remove('hidden');
+    document.getElementById('weatherErrorMessage').textContent = message;
+}
+
+function searchLocation() {
+    const locationInput = document.getElementById('locationInput');
+    const location = locationInput.value.trim();
+    
+    if (location) {
+        loadWeatherData(location, 0, true); // Force refresh for new location
+        locationInput.value = '';
+        showToast('Loading weather for ' + location + '...', 'info');
+    } else {
+        showToast('Please enter a location', 'error');
+    }
+}
+
+// Weather event listeners
+document.addEventListener('click', (e) => {
+    // Refresh weather button
+    if (e.target.id === 'refreshWeatherBtn' || e.target.closest('#refreshWeatherBtn')) {
+        loadWeatherData(currentLocation, 0, true); // Force refresh from API
+        showToast('Refreshing weather data...', 'info');
+    }
+    
+    // Search location button
+    if (e.target.id === 'searchLocationBtn' || e.target.closest('#searchLocationBtn')) {
+        searchLocation();
+    }
+    
+    // Retry weather button
+    if (e.target.id === 'retryWeatherBtn' || e.target.closest('#retryWeatherBtn')) {
+        weatherRetryCount = 0; // Reset retry count
+        loadWeatherData(currentLocation, 0, true); // Force refresh on retry
+    }
+});
+
+// Enter key for location search
+document.addEventListener('keydown', (e) => {
+    if (e.target.id === 'locationInput' && e.key === 'Enter') {
+        searchLocation();
+    }
+});
+
+// Load services and stats on page load (weather loads only on manual refresh)
+document.addEventListener('DOMContentLoaded', function() {
+    loadServices();
+    loadQuickStats();
+    // Weather data is now loaded only when refresh button is clicked
+});
+</script>
+{% endblock %} 
